@@ -1,9 +1,29 @@
-import React from 'react';
-import { Filter, RotateCcw, Check, ShieldCheck, Tag, DollarSign, Store, Zap } from 'lucide-react';
-import { translations } from '../constants/translations';
-import { MARKETPLACES } from '../constants/marketplaces';
+﻿import React from 'react';
+import { Filter, RotateCcw, Tag, Store, ShieldCheck, Zap, Star, X } from 'lucide-react';
+
+const PRICE_RANGES = [
+  { id: 'all', label: 'All Prices' },
+  { id: 'under1000', label: 'Under ₹1,000' },
+  { id: '1000to3000', label: '₹1,000 – ₹3,000' },
+  { id: '3000to10000', label: '₹3,000 – ₹10,000' },
+  { id: 'above10000', label: 'Above ₹10,000' }
+];
+
+const STORES_LIST = [
+  { id: 'amazon', name: 'Amazon.in' },
+  { id: 'flipkart', name: 'Flipkart' },
+  { id: 'myntra', name: 'Myntra' },
+  { id: 'ajio', name: 'Ajio Luxe / Fashion' },
+  { id: 'nykaa', name: 'Nykaa / Nykaa Man' },
+  { id: 'croma', name: 'Croma Electronics' },
+  { id: 'reliancedigital', name: 'Reliance Digital' },
+  { id: 'tatacliq', name: 'Tata CLiQ' },
+  { id: 'meesho', name: 'Meesho Wholesale' }
+];
 
 export default function FilterSidebar({
+  isMobileOpen = false,
+  onCloseMobile,
   selectedPriceRange,
   onSelectPriceRange,
   selectedStores,
@@ -16,181 +36,153 @@ export default function FilterSidebar({
   onToggleInStock,
   buyNowCycleOnly,
   onToggleBuyNowCycle,
-  onResetFilters,
-  language = 'en',
-  isMobileOpen = false,
-  onCloseMobile
+  onResetFilters
 }) {
-  const t = translations[language] || translations.en;
-
-  const PRICE_OPTIONS = [
-    { id: 'all', labelKey: 'allPrices' },
-    { id: 'under1000', labelKey: 'under1000' },
-    { id: '1000to3000', labelKey: 'from1000to3000' },
-    { id: '3000to10000', labelKey: 'from3000to10000' },
-    { id: 'above10000', labelKey: 'above10000' },
-  ];
-
-  const content = (
-    <div className="space-y-6 text-xs text-gray-800">
-      
+  const sidebarContent = (
+    <div className="w-64 shrink-0 bg-white rounded-2xl p-5 shadow-sm border border-gray-200 text-gray-800 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-200 pb-3">
-        <div className="flex items-center gap-2 font-bold text-gray-900 text-sm">
-          <Filter className="w-4 h-4 text-amber-600" />
-          <span>{t.filterTitle}</span>
+      <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+        <div className="flex items-center gap-2 font-bold text-sm text-gray-900">
+          <Filter className="w-4 h-4 text-amber-500" />
+          <span>Smart Filters</span>
         </div>
-        <button
-          onClick={onResetFilters}
-          className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-amber-600 transition-colors font-medium"
-          title="Reset all filters"
-        >
-          <RotateCcw className="w-3 h-3" />
-          <span>{t.clearFilters}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onResetFilters}
+            title="Reset Filters"
+            className="text-xs flex items-center gap-1 text-gray-500 hover:text-amber-600 font-medium transition"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset</span>
+          </button>
+          {isMobileOpen && onCloseMobile && (
+            <button onClick={onCloseMobile} className="md:hidden text-gray-500 hover:text-gray-800">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* 1. Price Range */}
+      {/* Price Range */}
       <div className="space-y-2.5">
-        <h4 className="font-bold text-gray-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-          <Tag className="w-3.5 h-3.5 text-amber-600" />
-          <span>{t.priceRange}</span>
-        </h4>
-        <div className="space-y-1.5">
-          {PRICE_OPTIONS.map((opt) => (
+        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-gray-700">
+          <Tag className="w-3.5 h-3.5 text-amber-500" />
+          <span>Price Range</span>
+        </div>
+        <div className="space-y-2">
+          {PRICE_RANGES.map((range) => (
             <label
-              key={opt.id}
-              className="flex items-center gap-2 cursor-pointer text-gray-700 hover:text-gray-900 group"
+              key={range.id}
+              className="flex items-center gap-2.5 text-xs text-gray-700 hover:text-gray-950 cursor-pointer select-none"
             >
               <input
                 type="radio"
                 name="priceRange"
-                checked={selectedPriceRange === opt.id}
-                onChange={() => onSelectPriceRange(opt.id)}
-                className="accent-amber-500 w-3.5 h-3.5 cursor-pointer"
+                checked={selectedPriceRange === range.id}
+                onChange={() => onSelectPriceRange(range.id)}
+                className="w-4 h-4 accent-amber-500 cursor-pointer"
               />
-              <span className={`text-xs ${selectedPriceRange === opt.id ? 'text-amber-700 font-bold' : ''}`}>
-                {t[opt.labelKey]}
+              <span className={selectedPriceRange === range.id ? 'font-semibold text-gray-900' : ''}>
+                {range.label}
               </span>
             </label>
           ))}
         </div>
       </div>
 
-      {/* 2. All Marketplaces Filter (Multi-select) */}
-      <div className="space-y-2.5">
-        <h4 className="font-bold text-gray-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-          <Store className="w-3.5 h-3.5 text-amber-600" />
-          <span>{t.marketplaces}</span>
-        </h4>
-        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 scrollbar-none">
-          {MARKETPLACES.map((store) => {
-            const isChecked = selectedStores.includes(store.id);
-            return (
-              <label
-                key={store.id}
-                className="flex items-center gap-2 cursor-pointer text-gray-700 hover:text-gray-900"
-              >
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={() => onToggleStore(store.id)}
-                  className="accent-amber-500 rounded w-3.5 h-3.5 cursor-pointer"
-                />
-                <span className={`text-xs ${isChecked ? 'text-gray-900 font-bold' : ''}`}>
-                  {store.name}
-                </span>
-              </label>
-            );
-          })}
+      {/* Marketplaces */}
+      <div className="space-y-2.5 pt-3 border-t border-gray-100">
+        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-gray-700">
+          <Store className="w-3.5 h-3.5 text-amber-500" />
+          <span>Marketplaces</span>
+        </div>
+        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+          {STORES_LIST.map((store) => (
+            <label
+              key={store.id}
+              className="flex items-center gap-2.5 text-xs text-gray-700 hover:text-gray-950 cursor-pointer select-none"
+            >
+              <input
+                type="checkbox"
+                checked={selectedStores.includes(store.id)}
+                onChange={() => onToggleStore(store.id)}
+                className="w-4 h-4 rounded accent-amber-500 cursor-pointer"
+              />
+              <span>{store.name}</span>
+            </label>
+          ))}
         </div>
       </div>
 
-      {/* 3. Authenticity & Trust Filters */}
-      <div className="space-y-2.5">
-        <h4 className="font-bold text-gray-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+      {/* AI Regret-Shield & Deal Quality */}
+      <div className="space-y-2.5 pt-3 border-t border-gray-100">
+        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-gray-700">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>{t.authenticityTrust}</span>
-        </h4>
+          <span>AI Trust & Deals</span>
+        </div>
         <div className="space-y-2">
-          
-          <label className="flex items-center gap-2 cursor-pointer text-gray-700 hover:text-gray-900">
+          <label className="flex items-center gap-2.5 text-xs text-gray-700 hover:text-gray-950 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={verifiedSellerOnly}
-              onChange={(e) => onToggleVerifiedSeller(e.target.checked)}
-              className="accent-emerald-600 rounded w-3.5 h-3.5 cursor-pointer"
+              onChange={onToggleVerifiedSeller}
+              className="w-4 h-4 rounded accent-emerald-600 cursor-pointer"
             />
-            <span className="text-xs">{t.verifiedSellerOnly}</span>
+            <span>Verified Sellers Only</span>
           </label>
 
-          <label className="flex items-center gap-2 cursor-pointer text-gray-700 hover:text-gray-900">
+          <label className="flex items-center gap-2.5 text-xs text-gray-700 hover:text-gray-950 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={inStockOnly}
-              onChange={(e) => onToggleInStock(e.target.checked)}
-              className="accent-emerald-600 rounded w-3.5 h-3.5 cursor-pointer"
+              onChange={onToggleInStock}
+              className="w-4 h-4 rounded accent-emerald-600 cursor-pointer"
             />
-            <span className="text-xs">{t.inStockOnly}</span>
+            <span>In Stock & Fast Delivery</span>
           </label>
 
-          {/* Buy Now Cycle Deals Only */}
-          <label className="flex items-center gap-2 cursor-pointer text-gray-700 hover:text-gray-900">
+          <label className="flex items-center gap-2.5 text-xs text-gray-700 hover:text-gray-950 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={buyNowCycleOnly}
-              onChange={(e) => onToggleBuyNowCycle(e.target.checked)}
-              className="accent-amber-500 rounded w-3.5 h-3.5 cursor-pointer"
+              onChange={onToggleBuyNowCycle}
+              className="w-4 h-4 rounded accent-amber-500 cursor-pointer"
             />
-            <span className="text-xs flex items-center gap-1 text-amber-700 font-bold">
-              <Zap className="w-3 h-3 text-amber-600 fill-amber-600" />
-              <span>{t.buyNowCycleOnly}</span>
+            <span className="inline-flex items-center gap-1">
+              <Zap className="w-3.5 h-3.5 text-amber-500" />
+              Buy Now Cycle Deals
             </span>
           </label>
-
-          {/* Min Regret-Shield Score */}
-          <div className="pt-1 space-y-1">
-            <span className="text-[11px] text-gray-600 block">{t.minRegretScore}:</span>
-            <select
-              value={minRegretScore}
-              onChange={(e) => onSelectMinRegretScore(Number(e.target.value))}
-              className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs text-gray-800 focus:outline-none focus:border-amber-500 shadow-sm"
-            >
-              <option value="0">All Ratings</option>
-              <option value="8.0">80%+ (High Confidence)</option>
-              <option value="9.0">90%+ (Exceptional Fit)</option>
-            </select>
-          </div>
-
         </div>
       </div>
 
+      {/* Minimum AI Regret-Shield Score */}
+      <div className="space-y-2 pt-3 border-t border-gray-100">
+        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-gray-700">
+          <Star className="w-3.5 h-3.5 text-amber-500" />
+          <span>Min AI Score</span>
+        </div>
+        <select
+          value={minRegretScore}
+          onChange={(e) => onSelectMinRegretScore(Number(e.target.value))}
+          className="w-full text-xs text-gray-800 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-2 focus:outline-none focus:border-amber-500"
+        >
+          <option value={0}>All AI Scores</option>
+          <option value={8}>8.0+ Safe Buy</option>
+          <option value={8.5}>8.5+ High Durability</option>
+          <option value={9}>9.0+ Top Rated Only</option>
+        </select>
+      </div>
     </div>
   );
 
-  return (
-    <>
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:block w-64 shrink-0 p-5 rounded-xl bg-white border border-gray-200 shadow-sm h-fit sticky top-24">
-        {content}
-      </aside>
+  if (isMobileOpen) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/50 flex justify-start md:hidden">
+        <div className="bg-white h-full overflow-y-auto p-4">{sidebarContent}</div>
+      </div>
+    );
+  }
 
-      {/* Mobile Drawer */}
-      {isMobileOpen && (
-        <div className="fixed inset-0 z-50 flex lg:hidden bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="w-72 max-w-[80vw] h-full bg-white border-r border-gray-200 p-5 overflow-y-auto shadow-2xl">
-            <div className="flex justify-end mb-2">
-              <button
-                onClick={onCloseMobile}
-                className="p-1 text-gray-500 hover:text-gray-900 font-bold text-xs"
-              >
-                ✕ Close
-              </button>
-            </div>
-            {content}
-          </div>
-        </div>
-      )}
-    </>
-  );
+  return <div className="hidden md:block">{sidebarContent}</div>;
 }

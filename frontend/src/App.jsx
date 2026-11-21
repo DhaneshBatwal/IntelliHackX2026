@@ -713,35 +713,7 @@ export default function App() {
                   language={language}
                 />
 
-                <FilterSidebar
-                  isMobileOpen={isMobileFiltersOpen}
-                  onCloseMobile={() => setIsMobileFiltersOpen(false)}
-                  selectedPriceRange={selectedPriceRange}
-                  onSelectPriceRange={setSelectedPriceRange}
-                  selectedStores={selectedStores}
-                  onToggleStore={(storeId) => {
-                    setSelectedStores(prev => 
-                      prev.includes(storeId) ? prev.filter(s => s !== storeId) : [...prev, storeId]
-                    );
-                  }}
-                  minRegretScore={minRegretScore}
-                  onSelectMinRegretScore={setMinRegretScore}
-                  verifiedSellerOnly={verifiedSellerOnly}
-                  onToggleVerifiedSeller={() => setVerifiedSellerOnly(!verifiedSellerOnly)}
-                  inStockOnly={inStockOnly}
-                  onToggleInStock={() => setInStockOnly(!inStockOnly)}
-                  buyNowCycleOnly={buyNowCycleOnly}
-                  onToggleBuyNowCycle={() => setBuyNowCycleOnly(!buyNowCycleOnly)}
-                  onResetFilters={() => {
-                    setSelectedPriceRange('all');
-                    setSelectedStores([]);
-                    setMinRegretScore(0);
-                    setVerifiedSellerOnly(false);
-                    setInStockOnly(false);
-                    setBuyNowCycleOnly(false);
-                  }}
-                  language={language}
-                />
+                
 
                 <div className="flex-1 min-w-0 space-y-5">
                   <div className="w-full rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 sm:p-6 shadow-lg border border-indigo-500/30">
@@ -1094,3 +1066,4 @@ export default function App() {
     </div>
   );
 }
+
