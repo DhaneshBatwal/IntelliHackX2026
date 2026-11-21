@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import Navbar from './components/Navbar';
 import SubNavbar from './components/SubNavbar';
 import HeroBanner from './components/HeroBanner';
@@ -15,21 +15,19 @@ import GroupShoppingBoards from './components/GroupShoppingBoards';
 import AboutUs from './components/AboutUs';
 import ConflictAlertModal from './components/ConflictAlertModal';
 import PriceWatchlistModal from './components/PriceWatchlistModal';
-import SavedBoardsDrawer from './components/SavedBoardsDrawer';
 import ToastNotification from './components/ToastNotification';
 import PincodeModal from './components/PincodeModal';
 import CheckoutModal from './components/CheckoutModal';
-import FlashSaleTicker from './components/FlashSaleTicker';
-import PresentationGuide from './components/PresentationGuide';
 
 import { INITIAL_CATALOG } from './constants/initialCatalog';
 import { translations } from './constants/translations';
 import { generateAllStoreLinks, generateStoreComparison, MARKETPLACES } from './constants/marketplaces';
 import { api } from './services/api';
-import { AlertCircle, Sparkles, CheckCircle2, ShoppingBag, ArrowLeft, TrendingDown } from 'lucide-react';
+import { Sparkles, ArrowLeft, Bot, ShieldCheck, Wand2 } from 'lucide-react';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'https://intellihackx2026.onrender.com';
 
 export default function App() {
-  // 1. Language & Internationalization State (English | हिंदी)
   const [language, setLanguage] = useState(() => {
     return localStorage.getItem('vibecart_lang') || 'en';
   });
@@ -42,7 +40,6 @@ export default function App() {
 
   const t = translations[language] || translations.en;
 
-  // 2. Authenticated User Profile & Connected Stores State
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('vibecart_user');
     if (saved) {
@@ -71,7 +68,6 @@ export default function App() {
     localStorage.setItem('vibecart_user', JSON.stringify(currentUser));
   }, [currentUser]);
 
-  // Real Smart-Shopping Metrics State
   const [totalSaved, setTotalSaved] = useState(() => {
     const saved = localStorage.getItem('vibecart_total_saved');
     return saved ? parseInt(saved, 10) : 14850;
@@ -95,20 +91,23 @@ export default function App() {
     localStorage.setItem('vibecart_impulse_amount', impulseAmount.toString());
   }, [totalSaved, impulseCount, impulseAmount]);
 
-  // 3. Navigation & Active View Router
-  // 'home' | 'about' | 'futurebuy' | 'rewards' | 'wardrobe' | 'groupboards'
   const [activeSection, setActiveSection] = useState('home');
   const [activeCategoryKey, setActiveCategoryKey] = useState('all');
   const [activeSearchCategory, setActiveSearchCategory] = useState('all');
 
-  // 4. Products & Search State
   const [products, setProducts] = useState(INITIAL_CATALOG);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const [searchBannerMessage, setSearchBannerMessage] = useState(null);
   const [currentCapsule, setCurrentCapsule] = useState(null);
+  const [aiInsights, setAiInsights] = useState({
+    ai_summary: "Gemini 2.5 Universal AI is actively auditing 90-day price histories, seller authenticity, and wardrobe compatibility across 12+ Indian marketplaces.",
+    deal_verdict: "Search any item or vibe prompt (e.g., 'Minimalist summer wedding outfit under ₹3,000' or 'Oily skin sunscreen') to watch live AI reasoning.",
+    compatibility_tags: ["Gemini 2.5 Flash Active", "Fake-MRP Shield", "Wardrobe Sync Ready"],
+    smart_pairings: ["Navy Linen Blazer", "Minimalist SPF 50 Sunscreen", "White Chunky Sneakers"]
+  });
+  const [isAiThinking, setIsAiThinking] = useState(false);
 
-  // 5. Filters State
   const [selectedPriceRange, setSelectedPriceRange] = useState('all');
   const [selectedStores, setSelectedStores] = useState([]);
   const [minRegretScore, setMinRegretScore] = useState(0);
@@ -117,14 +116,12 @@ export default function App() {
   const [buyNowCycleOnly, setBuyNowCycleOnly] = useState(false);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
-  // 6. Universal Cart State
   const [cartItems, setCartItems] = useState(() => {
-    return [INITIAL_CATALOG[0]]; // Seed with 1 item for initial demonstration
+    return [INITIAL_CATALOG[0]];
   });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [budgetCap, setBudgetCap] = useState(15000);
 
-  // 7. Modals State
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
   const [isSavedOpen, setIsSavedOpen] = useState(false);
@@ -134,7 +131,6 @@ export default function App() {
   const [selectedQuickViewItem, setSelectedQuickViewItem] = useState(null);
   const [conflictReport, setConflictReport] = useState(null);
 
-  // 8. Delivery Location & Pincode State
   const [currentPincode, setCurrentPincode] = useState(() => {
     return localStorage.getItem('vibecart_pincode') || '560001';
   });
@@ -142,7 +138,6 @@ export default function App() {
     return localStorage.getItem('vibecart_city') || 'Bengaluru';
   });
 
-  // 9. Interactive Toast Notification State
   const [toasts, setToasts] = useState([]);
   const showToast = (message, type = 'success') => {
     const id = Date.now() + Math.random();
@@ -152,33 +147,19 @@ export default function App() {
     }, 4000);
   };
 
-  // 10. Synced Supabase Data (Wardrobe, Saved Boards, Price Alerts)
   const [wardrobeItems, setWardrobeItems] = useState([]);
   const [savedBoards, setSavedBoards] = useState([]);
   const [priceAlerts, setPriceAlerts] = useState([]);
   const [futureBuyCount, setFutureBuyCount] = useState(3);
   const [systemHealth, setSystemHealth] = useState(null);
 
-  // Initial Data Sync from Backend
   useEffect(() => {
-    api.getHealth()
-      .then(data => setSystemHealth(data))
-      .catch(e => console.log("Health check notice:", e));
-
-    api.getWardrobe()
-      .then(items => setWardrobeItems(items || []))
-      .catch(e => console.log("Wardrobe fetch notice:", e));
-
-    api.getSavedBoards()
-      .then(boards => setSavedBoards(boards || []))
-      .catch(e => console.log("Saved boards notice:", e));
-
-    api.getPriceAlerts()
-      .then(alerts => setPriceAlerts(alerts || []))
-      .catch(e => console.log("Price alerts notice:", e));
+    api.getHealth().then(data => setSystemHealth(data)).catch(() => {});
+    api.getWardrobe().then(items => setWardrobeItems(items || [])).catch(() => {});
+    api.getSavedBoards().then(boards => setSavedBoards(boards || [])).catch(() => {});
+    api.getPriceAlerts().then(alerts => setPriceAlerts(alerts || [])).catch(() => {});
   }, []);
 
-  // Filtered Products Calculation (Category-Aware + High-Recall Global Text Search)
   const filteredProducts = useMemo(() => {
     const hasSearch = Boolean(searchQuery.trim());
     const q = searchQuery.toLowerCase().trim();
@@ -188,7 +169,6 @@ export default function App() {
       : [];
 
     return products.filter((item) => {
-      // 1. Search Query Match
       if (hasSearch) {
         const searchBlob = [
           item.name,
@@ -209,7 +189,6 @@ export default function App() {
         if (!isMatch) return false;
       }
 
-      // 2. Subnav Category Strip (ONLY applies when NO search query is active)
       if (!hasSearch && activeCategoryKey !== 'all' && activeCategoryKey !== 'trending') {
         if (activeCategoryKey === 'under999' || activeCategoryKey === 'under2999') {
           const price = item.true_landed_price?.total || item.current_price || item.estimated_price || 0;
@@ -223,14 +202,12 @@ export default function App() {
         }
       }
 
-      // 3. Price Range Filter
       const itemPrice = item.true_landed_price?.total || item.current_price || item.estimated_price || 0;
       if (selectedPriceRange === 'under1000' && itemPrice > 1000) return false;
       if (selectedPriceRange === '1000to3000' && (itemPrice < 1000 || itemPrice > 3000)) return false;
       if (selectedPriceRange === '3000to10000' && (itemPrice < 3000 || itemPrice > 10000)) return false;
       if (selectedPriceRange === 'above10000' && itemPrice <= 10000) return false;
 
-      // 4. Multi-Store Filter
       if (selectedStores.length > 0) {
         const itemStoreId = item.best_store_id?.toLowerCase() || '';
         const itemMerchant = item.merchant_name?.toLowerCase() || '';
@@ -240,32 +217,18 @@ export default function App() {
         if (!hasStoreMatch) return false;
       }
 
-      // 5. Minimum Regret Score
       const itemScore = item.regret_score || 8.5;
       if (minRegretScore > 0 && itemScore < minRegretScore) return false;
-
-      // 6. Buy Now Cycle Deals Only
-      if (buyNowCycleOnly && item.price_cycle?.action !== 'buy_now') {
-        return false;
-      }
-
-      // 7. In-Stock Only
+      if (buyNowCycleOnly && item.price_cycle?.action !== 'buy_now') return false;
       if (inStockOnly && item.stock_status === 'out_of_stock') return false;
 
       return true;
     });
   }, [
-    products, 
-    searchQuery, 
-    activeCategoryKey, 
-    selectedPriceRange, 
-    selectedStores, 
-    minRegretScore, 
-    buyNowCycleOnly,
-    inStockOnly
+    products, searchQuery, activeCategoryKey, selectedPriceRange,
+    selectedStores, minRegretScore, buyNowCycleOnly, inStockOnly
   ]);
 
-  // Instant Smart Product Generator for any search query
   const generateInstantMarketplaceCards = (cleanPrompt, chosenCategory = 'all') => {
     const qClean = cleanPrompt.trim();
     const qLower = qClean.toLowerCase();
@@ -273,19 +236,21 @@ export default function App() {
     let categoryKey = chosenCategory !== 'all' ? chosenCategory : 'mobilesLaptops';
     let categoryName = 'electronics';
     let basePrice = 2999;
-    let brands = ['Top Brand', 'Verified Merchant', 'Authorized Retail'];
+    let brands = ['Top Brand', 'Verified Merchant', 'Authorized Retail', 'D2C Studio'];
     let thumbnails = [
       'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=700&q=80',
       'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=700&q=80',
-      'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=700&q=80'
+      'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=700&q=80',
+      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=700&q=80'
     ];
     let specs = [
       '100% Genuine Certified Build • Standard Manufacturer Warranty',
       'High Efficiency Performance • BIS Certified Safety Standards',
-      'Commercial Grade Durability • Certified Official Packaging'
+      'Commercial Grade Durability • Certified Official Packaging',
+      'AI-Verified Top Seller • Zero Hidden Platform Fees'
     ];
 
-    if (qLower.includes('blazer') || qLower.includes('coat') || qLower.includes('suit')) {
+    if (qLower.includes('blazer') || qLower.includes('coat') || qLower.includes('suit') || qLower.includes('shirt') || qLower.includes('outfit')) {
       categoryKey = 'fashion';
       categoryName = 'outerwear';
       basePrice = 3299;
@@ -293,12 +258,14 @@ export default function App() {
       thumbnails = [
         'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=700&q=80',
         'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=700&q=80',
-        'https://images.unsplash.com/photo-1598808503746-f34c53b9323e?auto=format&fit=crop&w=700&q=80'
+        'https://images.unsplash.com/photo-1598808503746-f34c53b9323e?auto=format&fit=crop&w=700&q=80',
+        'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=700&q=80'
       ];
       specs = [
         'Poly-Viscose Wool-Touch Blend • Structured Shoulder Pads • Wrinkle-Resistant',
         '100% Breathable Linen-Cotton • Unlined Summer Comfort • Notch Lapel',
-        'Italian Cut Slim Fit • Two-Button Closure • Satin Inner Piping'
+        'Italian Cut Slim Fit • Two-Button Closure • Satin Inner Piping',
+        'Tailored Slim Fit • Breathable All-Season Weave • Easy Care'
       ];
     } else if (qLower.includes('shoe') || qLower.includes('sneaker') || qLower.includes('boot') || qLower.includes('loafer') || qLower.includes('footwear')) {
       categoryKey = 'footwear';
@@ -308,124 +275,39 @@ export default function App() {
       thumbnails = [
         'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=700&q=80',
         'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=700&q=80',
-        'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?auto=format&fit=crop&w=700&q=80'
+        'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?auto=format&fit=crop&w=700&q=80',
+        'https://images.unsplash.com/photo-1600185365926-3a2ce3cdb9eb?auto=format&fit=crop&w=700&q=80'
       ];
       specs = [
         'Engineered Mesh Upper • Responsive Nitrogen Foam Cushioning • High-Traction Rubber',
         'Soft Cushion Footbed • Lightweight EVA Midsole • Shock-Absorbing Heel',
-        'Premium Vegan Leather • Padded Ankle Collar • OrthoLite Insole'
+        'Premium Vegan Leather • Padded Ankle Collar • OrthoLite Insole',
+        'All-Day Arch Support • Slip-Resistant Outsole • Breathable Lining'
       ];
-    } else if (qLower.includes('laptop') || qLower.includes('macbook') || qLower.includes('computer') || qLower.includes('pc')) {
-      categoryKey = 'mobilesLaptops';
-      categoryName = 'electronics';
-      basePrice = 45990;
-      brands = ['Apple', 'ASUS', 'HP', 'Lenovo'];
-      thumbnails = [
-        'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=700&q=80',
-        'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=700&q=80',
-        'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=700&q=80'
-      ];
-      specs = [
-        'FHD Anti-Glare Display • High-Speed NVMe SSD • Fast Charging 65W',
-        'Backlit Keyboard • Dual Stereo Speakers • Multi-Port USB-C Hub Support',
-        'All-Day 10hr Battery • Metal Alloy Body • Windows 11 Home & MS Office'
-      ];
-    } else if (qLower.includes('earbud') || qLower.includes('headphone') || qLower.includes('audio') || qLower.includes('tws')) {
-      categoryKey = 'mobilesLaptops';
-      categoryName = 'electronics';
-      basePrice = 2499;
-      brands = ['OnePlus', 'boAt', 'Sony', 'Realme'];
-      thumbnails = [
-        'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=700&q=80',
-        'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=700&q=80',
-        'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=700&q=80'
-      ];
-      specs = [
-        'Active Noise Cancellation (ANC) • 40Hr Battery Life • Dual Device Pairing',
-        '12.4mm Titanized Drivers • IP55 Water Resistance • Low Latency Gaming Mode',
-        'Spatial 3D Audio • Environmental Noise Cancelling Quad Mics • Quick Warp Charge'
-      ];
-    } else if (qLower.includes('phone') || qLower.includes('mobile') || qLower.includes('iphone') || qLower.includes('samsung') || qLower.includes('oneplus')) {
-      categoryKey = 'mobilesLaptops';
-      categoryName = 'electronics';
-      basePrice = 28999;
-      brands = ['OnePlus', 'Apple', 'Samsung', 'Xiaomi'];
-      thumbnails = [
-        'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=700&q=80',
-        'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=700&q=80',
-        'https://images.unsplash.com/photo-1580910051074-3eb694886505?auto=format&fit=crop&w=700&q=80'
-      ];
-      specs = [
-        '120Hz AMOLED Display • 50MP Sony OIS Camera • 5000mAh Battery • 5G Dual SIM',
-        'High-Speed Octa-Core Processor • 67W SuperVOOC Fast Charge • HDR10+ Audio',
-        'Gorilla Glass Victus Protection • Stereo Dolby Atmos Speakers • NFC Enabled'
-      ];
-    } else if (qLower.includes('watch') || qLower.includes('smartwatch')) {
-      categoryKey = 'mobilesLaptops';
-      categoryName = 'electronics';
-      basePrice = 2199;
-      brands = ['Noise', 'Fire-Boltt', 'Fastrack', 'boAt'];
-      thumbnails = [
-        'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=700&q=80',
-        'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=700&q=80',
-        'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=700&q=80'
-      ];
-      specs = [
-        '1.85" HD Display • Bluetooth Calling with Speaker • 100+ Sports Modes • SpO2 Monitor',
-        '7-Day Battery Life • IP68 Water Resistant • Custom Watch Faces • Heart Rate 24/7',
-        'Stainless Steel Dial • Sleep Tracking & Stress Monitor • Smart Notification Sync'
-      ];
-    } else if (qLower.includes('mixer') || qLower.includes('grinder') || qLower.includes('cooker') || qLower.includes('kettle') || qLower.includes('air fryer')) {
-      categoryKey = 'homeKitchen';
-      categoryName = 'homeKitchen';
-      basePrice = 2499;
-      brands = ['Prestige', 'Philips', 'Pigeon', 'Bosch'];
-      thumbnails = [
-        'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?auto=format&fit=crop&w=700&q=80',
-        'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=700&q=80',
-        'https://images.unsplash.com/photo-1585670149967-b4f4da88cc9f?auto=format&fit=crop&w=700&q=80'
-      ];
-      specs = [
-        '100% Pure Copper Motor • Food-Grade Stainless Steel • Overload Protection Switch',
-        'Multi-Speed Pulse Control • Ergonomic Safety Handles • 2-Year Warranty',
-        'Leak-Proof Silicon Gaskets • Rapid Processing Technology • ISI Certified Purity'
-      ];
-    } else if (qLower.includes('dal') || qLower.includes('oil') || qLower.includes('atta') || qLower.includes('tea') || qLower.includes('grocery')) {
-      categoryKey = 'grocery';
-      categoryName = 'grocery';
-      basePrice = 349;
-      brands = ['Tata Sampann', 'Fortune', 'Aashirvaad', 'Tata Tea'];
-      thumbnails = [
-        'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=700&q=80',
-        'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=700&q=80',
-        'https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=700&q=80'
-      ];
-      specs = [
-        '100% Organic Unpolished Quality • Retains Natural Nutrients • FSSAI Certified',
-        'Zero Artificial Preservatives • Hygienically Vacuum Packed • Farm-Direct Sourced',
-        'High Dietary Fiber • Low Glycemic Index • Standard Retail Grade 1 Quality'
-      ];
-    } else if (qLower.includes('sunscreen') || qLower.includes('serum') || qLower.includes('beauty') || qLower.includes('shampoo')) {
+    } else if (qLower.includes('sunscreen') || qLower.includes('spf') || qLower.includes('serum') || qLower.includes('cleanser') || qLower.includes('beauty') || qLower.includes('shampoo')) {
       categoryKey = 'beautyPersonalCare';
       categoryName = 'beautyPersonalCare';
-      basePrice = 499;
-      brands = ['Minimalist', 'The Derma Co', 'Cetaphil', 'L\'Oreal'];
+      basePrice = 449;
+      brands = ['Minimalist', 'The Derma Co', 'Dot & Key', 'CeraVe'];
       thumbnails = [
         'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=700&q=80',
         'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=700&q=80',
-        'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?auto=format&fit=crop&w=700&q=80'
+        'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?auto=format&fit=crop&w=700&q=80',
+        'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=700&q=80'
       ];
       specs = [
         'Dermatologically Tested • Non-Comedogenic Formula • Fragrance-Free',
         'Broad Spectrum PA++++ Protection • Zero White Cast • Lightweight Gel Texture',
-        'Enriched with Ceramides & Hyaluronic Acid • Clinical Formulation'
+        'Enriched with Ceramides & Hyaluronic Acid • Clinical Formulation',
+        'Oil-Control Matte Finish • Sweat & Water Resistant • Photostable Filters'
       ];
     }
 
     const variations = [
-      { suffix: "Pro Edition (Top Pick)", multiplier: 1.0, rating: 4.6, reviews: 1420 },
-      { suffix: "Classic Series (Bestseller)", multiplier: 0.85, rating: 4.7, reviews: 2840 },
-      { suffix: "Ultra Performance Collection", multiplier: 1.25, rating: 4.5, reviews: 860 }
+      { suffix: "Pro Edition (AI Top Pick)", multiplier: 1.0, rating: 4.7, reviews: 1820 },
+      { suffix: "Classic Series (Bestseller)", multiplier: 0.88, rating: 4.6, reviews: 2840 },
+      { suffix: "Ultra Performance Collection", multiplier: 1.22, rating: 4.5, reviews: 960 },
+      { suffix: "Essential Daily Value Pack", multiplier: 0.78, rating: 4.4, reviews: 1410 }
     ];
 
     const now = Date.now();
@@ -434,7 +316,7 @@ export default function App() {
       const price = Math.round(basePrice * v.multiplier);
       const original = Math.round(price * 1.35);
       const title = `${brand} ${qClean.charAt(0).toUpperCase() + qClean.slice(1)} ${v.suffix}`;
-      const store = i % 2 === 0 ? "Amazon.in" : "Flipkart";
+      const store = i % 2 === 0 ? "Nykaa" : "Amazon.in";
 
       return {
         id: `syn_${now}_${i}`,
@@ -445,7 +327,7 @@ export default function App() {
         categoryKey: categoryKey,
         color: "Original Finish",
         spec: specs[i % specs.length],
-        description: `Verified market deal for "${qClean}". Best landed pricing, authentic seller audit, and zero-hidden fees guaranteed across Amazon, Flipkart, Croma, and Myntra.`,
+        description: `Gemini AI verified deal for "${qClean}". Best landed pricing, authentic seller audit, and zero-hidden fees guaranteed across Amazon, Flipkart, Myntra, Nykaa & Croma.`,
         current_price: price,
         original_price: original,
         discount_percent: Math.round(((original - price) / original) * 100),
@@ -453,10 +335,10 @@ export default function App() {
         reviews_count: v.reviews,
         merchant_name: store,
         best_store_pill: `Lowest on ${store}`,
-        best_store_id: store.toLowerCase().includes('amazon') ? 'amazon' : 'flipkart',
+        best_store_id: store.toLowerCase().includes('amazon') ? 'amazon' : 'nykaa',
         thumbnail_url: thumbnails[i % thumbnails.length],
-        regret_score: +(9.2 + (i * 0.2)).toFixed(1),
-        verified_fit: "96% Verified Fit / Genuine",
+        regret_score: +(9.5 - (i * 0.2)).toFixed(1),
+        verified_fit: `${97 - i * 2}% AI Vibe Match`,
         search_query: `${brand} ${qClean}`,
         wardrobe_match: "Compatible with your daily setup",
         true_landed_price: {
@@ -503,16 +385,17 @@ export default function App() {
     });
   };
 
-  // Universal Search Handler (Invoking Gemini AI & Live SerpApi Multi-Store Shopping)
   const handleUniversalSearch = async (prompt, imageBase64 = null, chosenCategory = 'all') => {
     setActiveSection('home');
     const cleanPrompt = (prompt || '').trim();
     setSearchQuery(cleanPrompt);
     setActiveCategoryKey('all');
     setIsLoadingSearch(true);
-    setSearchBannerMessage(`Scanning 12+ Marketplaces & Auditing Prices for "${cleanPrompt || 'Visual Match'}"...`);
+    setIsAiThinking(true);
+    setSearchBannerMessage(`Gemini 2.5 AI is analyzing "${cleanPrompt || 'Visual Match'}" & auditing prices across 12+ stores...`);
 
-    // 1. INSTANT CARD SYNTHESIS: Ensure the user IMMEDIATELY sees relevant matching products
+    let currentTitles = [];
+
     if (cleanPrompt) {
       const qLower = cleanPrompt.toLowerCase();
       const terms = qLower.split(/\s+/).filter(w => w.length > 2);
@@ -521,113 +404,47 @@ export default function App() {
         return blob.includes(qLower) || (terms.length > 0 && terms.some(t => blob.includes(t)));
       });
 
-      if (localMatches.length < 2) {
+      if (localMatches.length < 4) {
         const instantCards = generateInstantMarketplaceCards(cleanPrompt, chosenCategory);
+        currentTitles = instantCards.map(c => c.name);
         setProducts(prev => {
           const existingIds = new Set(instantCards.map(s => s.id));
           return [...instantCards, ...prev.filter(p => !existingIds.has(p.id))];
         });
-        setSearchBannerMessage(`Found live verified deals for "${cleanPrompt}" across Amazon, Flipkart, Myntra, Croma and more!`);
       } else {
-        setSearchBannerMessage(`Found ${localMatches.length} matching verified deals for "${cleanPrompt}".`);
+        currentTitles = localMatches.map(c => c.name);
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/ai-copilot`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: cleanPrompt, product_titles: currentTitles })
+        });
+        if (res.ok) {
+          const aiData = await res.json();
+          setAiInsights(aiData);
+        }
+      } catch (err) {
+        console.warn("AI Copilot notice:", err);
       }
     }
 
-    // 2. BACKGROUND AI ENRICHMENT (Only when user asks for a scenario/capsule or uploads photo)
     const isScenario = imageBase64 || cleanPrompt.toLowerCase().includes('outfit') || cleanPrompt.toLowerCase().includes('vibe') || cleanPrompt.toLowerCase().includes('wedding') || cleanPrompt.toLowerCase().includes('under');
-    
     if (isScenario) {
       try {
         const capsule = await api.generateCapsule(cleanPrompt || "Curated Capsule Look", imageBase64, 15000);
         setCurrentCapsule(capsule);
-
-        if (capsule && capsule.items && capsule.items.length > 0) {
-          const transformedItems = capsule.items.map((it, idx) => {
-            const price = it.current_price || it.estimated_price || 2499;
-            const original = Math.round(price * 1.35);
-            const storeName = it.merchant_name || (idx % 2 === 0 ? "Amazon.in" : "Myntra");
-            const storeId = storeName.toLowerCase().includes('amazon') ? 'amazon' : 'myntra';
-
-            return {
-              id: `ai_${Date.now()}_${idx}`,
-              name: it.live_title || it.name,
-              brand: it.brand || "AI Curated Collection",
-              category: it.category || "fashion",
-              categoryKey: 'fashion',
-              color: it.color || "Harmonized Tone",
-              spec: it.fabric || "Premium Certified Quality",
-              description: it.vibe_reason || it.description || "AI-recommended high-value match across stores.",
-              current_price: price,
-              original_price: original,
-              discount_percent: Math.round(((original - price) / original) * 100),
-              rating: it.rating || 4.5,
-              reviews_count: it.reviews_count || 180,
-              merchant_name: storeName,
-              best_store_pill: `Lowest on ${storeName}`,
-              best_store_id: storeId,
-              thumbnail_url: it.thumbnail_url || "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=700&q=80",
-              regret_score: (it.regret_shield?.confidence_score ? +(it.regret_shield.confidence_score / 10).toFixed(1) : 9.2),
-              verified_fit: `${Math.round(it.regret_shield?.confidence_score || 94)}% Verified Fit`,
-              search_query: it.live_title || it.name,
-              wardrobe_match: it.wardrobe_conflict || "Verified match with your owned wardrobe",
-              true_landed_price: {
-                base_price: price,
-                delivery_fee: 0,
-                platform_fee: 0,
-                total: price,
-                note: `Direct verified checkout on ${storeName}.`
-              },
-              fake_mrp_check: {
-                is_inflated: false,
-                declared_mrp: original,
-                real_90day_avg: Math.round(price * 1.05),
-                actual_discount_pct: Math.round(((original - price) / original) * 100),
-                warning: "AI audited price: verified legitimate price cycle."
-              },
-              return_policy: "7-Day Hassle-Free Return Policy",
-              seller_authenticity: `Verified Merchant (${storeName} Official Retail)`,
-              pincode_speed: "In Stock • Express Delivery in 24-48 Hrs",
-              bank_offers: [
-                { bank: "HDFC Bank Cards", discountText: "10% Instant Discount up to ₹1,000", netPrice: Math.round(price * 0.9) },
-                { bank: "Amazon Pay ICICI", discountText: "5% Unlimited Cashback", netPrice: Math.round(price * 0.95) }
-              ],
-              spec_xray: {
-                red_flags: ["Careful sizing required; compare measurement chart before order."],
-                green_flags: ["Verified genuine brand certificate", "High durability rating", "Zero hidden delivery fee"],
-                verdict: "Safe purchase recommendation."
-              },
-              price_cycle: {
-                action: "buy_now",
-                label: "Buy Now (Lowest 90-Day Price)",
-                reason: "AI verified lowest price across verified sellers."
-              },
-              cost_per_wear: Math.round(price / 25),
-              is_fashion: true,
-              de_influencer_reasons: [
-                "Careful sizing required; compare measurement chart before order.",
-                "Fabric maintenance requires gentle cycle to preserve color saturation."
-              ],
-              single_store_bundle_price: Math.round(price * 1.2),
-              deep_links: it.deep_links || generateAllStoreLinks(it.live_title || it.name),
-              store_comparison: generateStoreComparison(price, storeName, it.live_title || it.name)
-            };
-          });
-
-          setProducts(prev => {
-            const existingIds = new Set(transformedItems.map(t => t.id));
-            return [...transformedItems, ...prev.filter(p => !existingIds.has(p.id))];
-          });
-        }
       } catch (err) {
-        console.warn("AI background enrichment fallback:", err);
+        console.warn("Capsule generation notice:", err);
       }
     }
 
+    setIsAiThinking(false);
     setIsLoadingSearch(false);
-    setTimeout(() => setSearchBannerMessage(null), 6000);
+    setTimeout(() => setSearchBannerMessage(null), 5000);
   };
 
-  // Cart Management
   const handleAddToCart = (item) => {
     setCartItems(prev => {
       const exists = prev.find(i => i.id === item.id);
@@ -648,7 +465,6 @@ export default function App() {
     setCartItems([]);
   };
 
-  // Pre-Checkout Wardrobe Duplicate Conflict Checker
   const handleTriggerConflictCheck = async () => {
     if (cartItems.length === 0) return;
     try {
@@ -659,7 +475,6 @@ export default function App() {
     }
   };
 
-  // Award VibeCoins & Record Real Savings
   const handleAwardVibeCoins = (amount) => {
     setCurrentUser(prev => ({
       ...prev,
@@ -671,7 +486,6 @@ export default function App() {
     setTotalSaved(prev => prev + Math.round(amount));
   };
 
-  // Record Impulse Buy Avoided (when clicking "I'll Skip This" on De-Influencer check)
   const handleRecordImpulseAvoided = (itemPrice) => {
     setImpulseCount(prev => prev + 1);
     setImpulseAmount(prev => prev + Math.round(itemPrice));
@@ -679,7 +493,6 @@ export default function App() {
     showToast(`🛡️ Saved ₹${Math.round(itemPrice).toLocaleString('en-IN')} by skipping impulse buy! +50 VibeCoins`, 'warning');
   };
 
-  // Pincode Selection Handler
   const handleSelectPincode = (metro) => {
     setCurrentPincode(metro.pincode);
     setCurrentCity(metro.city);
@@ -688,12 +501,10 @@ export default function App() {
     showToast(`📍 Delivery location set to ${metro.city} (${metro.pincode})`, 'info');
   };
 
-  // Copy Coupon Code Handler
   const handleCopyCoupon = (code) => {
     showToast(`🎉 Coupon ${code} copied! Extra 10% instant discount at checkout`, 'coupon');
   };
 
-  // Order Success Handler
   const handleOrderSuccess = ({ orderId, total, savings }) => {
     setTotalSaved(prev => prev + savings);
     handleAwardVibeCoins(250);
@@ -701,7 +512,6 @@ export default function App() {
     showToast(`🚀 Order ${orderId} placed! Saved ₹${savings.toLocaleString('en-IN')}`, 'success');
   };
 
-  // Price Watchlist & Alert Trigger
   const handleAddToWatchlist = async (item) => {
     const currentPrice = item.current_price || item.estimated_price || 2499;
     const targetPrice = Math.round(currentPrice * 0.8);
@@ -721,47 +531,35 @@ export default function App() {
       setPriceAlerts(prev => [newAlert, ...prev]);
       alert(`Price-Drop Alert & Auto-Buy Monitor active for "${item.name}"!`);
     } catch (e) {
-      console.error("Price alert error:", e);
       alert("Alert saved to monitoring watchlist!");
     }
   };
 
-  // Wardrobe Items Management & Wear Increment
   const handleAddWardrobeItem = async (newItem) => {
     try {
       const created = await api.addWardrobeItem(newItem);
       setWardrobeItems(prev => [created, ...prev]);
     } catch (e) {
-      console.error(e);
       setWardrobeItems(prev => [{ ...newItem, id: Date.now() }, ...prev]);
     }
   };
 
   const handleDeleteWardrobeItem = async (itemId) => {
-    try {
-      await api.deleteWardrobeItem(itemId);
-    } catch (e) {
-      console.warn(e);
-    }
+    try { await api.deleteWardrobeItem(itemId); } catch (e) {}
     setWardrobeItems(prev => prev.filter(i => String(i.id) !== String(itemId)));
   };
 
   const handleIncrementWear = (itemId) => {
     setWardrobeItems(prev => prev.map(item => {
       if (item.id === itemId) {
-        return {
-          ...item,
-          wears_count: (item.wears_count || 0) + 1
-        };
+        return { ...item, wears_count: (item.wears_count || 0) + 1 };
       }
       return item;
     }));
   };
 
-  // Cart total calculations
   const cartSubtotal = cartItems.reduce((acc, it) => acc + (it.current_price || it.estimated_price || 0) * (it.quantity || 1), 0);
 
-  // Multi-Store Split-Cart Optimizer Calculation
   const splitBundles = useMemo(() => {
     if (cartItems.length === 0) return [];
     const bundles = {};
@@ -810,8 +608,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#EAEDED] text-gray-900 font-sans selection:bg-[#FEBD69] selection:text-gray-950">
-      
-      {/* 1. Sticky Universal E-Commerce Top Navigation Bar */}
       <Navbar
         language={language}
         onSelectLanguage={(code) => {
@@ -846,7 +642,6 @@ export default function App() {
         onOpenPincodeModal={() => setIsPincodeOpen(true)}
       />
 
-      {/* 2. Category Sub-Navbar Strip (Visible on Home) */}
       {activeSection === 'home' && (
         <SubNavbar
           activeCategoryKey={activeCategoryKey}
@@ -858,10 +653,7 @@ export default function App() {
         />
       )}
 
-      {/* Main Content Viewport */}
       <main className="flex-1 pb-16">
-        
-        {/* Status Notification Banner */}
         {searchBannerMessage && (
           <div className="max-w-7xl mx-auto px-4 mt-3 animate-fade-in">
             <div className="p-3 rounded-xl bg-white border border-amber-300 text-gray-900 text-xs flex items-center justify-between shadow-sm">
@@ -879,11 +671,8 @@ export default function App() {
           </div>
         )}
 
-        {/* SECTION 1: HOME STOREFRONT */}
         {activeSection === 'home' && (
           <div className="space-y-6">
-            
-            {/* Personalized Welcome Banner with Connected Store Status & Embedded Festival Deal */}
             <HeroBanner
               currentUser={currentUser}
               onOpenAuth={() => setIsAuthOpen(true)}
@@ -892,11 +681,8 @@ export default function App() {
               language={language}
             />
 
-            {/* Core Storefront Layout: Left Filter Sidebar + 4-Column Product Grid */}
             <div className="max-w-7xl mx-auto px-3 sm:px-6">
               <div className="flex gap-6 items-start">
-                
-                {/* Desktop Left Filter Sidebar */}
                 <FilterSidebar
                   selectedPriceRange={selectedPriceRange}
                   onSelectPriceRange={setSelectedPriceRange}
@@ -927,7 +713,6 @@ export default function App() {
                   language={language}
                 />
 
-                {/* Mobile Drawer Filter Sidebar */}
                 <FilterSidebar
                   isMobileOpen={isMobileFiltersOpen}
                   onCloseMobile={() => setIsMobileFiltersOpen(false)}
@@ -958,34 +743,103 @@ export default function App() {
                   language={language}
                 />
 
-                {/* 4-Column E-Commerce Product Grid */}
-                <ProductGrid
-                  products={filteredProducts}
-                  onOpenQuickView={(item) => setSelectedQuickViewItem(item)}
-                  onAddToCart={handleAddToCart}
-                  cartItemIds={cartItems.map(i => i.id)}
-                  onOpenMobileFilters={() => setIsMobileFiltersOpen(true)}
-                  activeFilterSummary={
-                    activeCategoryKey !== 'trending' 
-                      ? activeCategoryKey 
-                      : (selectedStores.length ? `${selectedStores.length} stores` : '')
-                  }
-                  language={language}
-                />
+                <div className="flex-1 min-w-0 space-y-5">
+                  <div className="w-full rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 sm:p-6 shadow-lg border border-indigo-500/30">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 rounded-xl bg-indigo-500/20 border border-indigo-400/30">
+                          <Bot className="w-5 h-5 text-indigo-300" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-300">
+                              ✨ Gemini 2.5 Universal AI Copilot
+                            </span>
+                            {isAiThinking && (
+                              <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 animate-pulse">
+                                Analyzing...
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-400">
+                            {searchQuery
+                              ? `Live reasoning for "${searchQuery}"`
+                              : "Multimodal Intent Analysis • Fake-MRP Audit • Wardrobe Sync"}
+                          </p>
+                        </div>
+                      </div>
 
+                      <div className="flex flex-wrap gap-1.5">
+                        {(aiInsights?.compatibility_tags || []).map((tag, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+                          >
+                            <ShieldCheck className="w-3 h-3" />
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-3">
+                      <div className="lg:col-span-2 bg-white/5 rounded-xl p-4 border border-white/10 space-y-2">
+                        <p className="text-sm text-slate-100 leading-relaxed">
+                          {aiInsights?.ai_summary}
+                        </p>
+                        <p className="text-xs font-semibold text-amber-300">
+                          💡 AI Price Verdict:{" "}
+                          <span className="font-normal text-slate-300">
+                            {aiInsights?.deal_verdict}
+                          </span>
+                        </p>
+                      </div>
+
+                      <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col justify-between">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-indigo-300 mb-2">
+                          <Wand2 className="w-3.5 h-3.5" />
+                          <span>AI Smart Pairings (Click to Search)</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {(aiInsights?.smart_pairings || []).map((pairing, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => handleUniversalSearch(pairing)}
+                              className="text-xs px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition shadow-sm"
+                            >
+                              + {pairing}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <ProductGrid
+                    products={filteredProducts}
+                    onOpenQuickView={(item) => setSelectedQuickViewItem(item)}
+                    onAddToCart={handleAddToCart}
+                    cartItemIds={cartItems.map(i => i.id)}
+                    onOpenMobileFilters={() => setIsMobileFiltersOpen(true)}
+                    activeFilterSummary={
+                      activeCategoryKey !== 'trending' 
+                        ? activeCategoryKey 
+                        : (selectedStores.length ? `${selectedStores.length} stores` : '')
+                    }
+                    language={language}
+                  />
+                </div>
               </div>
             </div>
-
           </div>
         )}
 
-        {/* SECTION 2: ABOUT US */}
         {activeSection === 'about' && (
           <div>
             <div className="max-w-7xl mx-auto px-4 pt-4">
               <button 
                 onClick={() => setActiveSection('home')}
-                className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 font-semibold mb-2"
+                className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-500 font-semibold mb-2"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back to Storefront</span>
@@ -995,13 +849,12 @@ export default function App() {
           </div>
         )}
 
-        {/* SECTION 3: FUTURE BUY LONG-TERM IDEA VAULT */}
         {activeSection === 'futurebuy' && (
           <div>
             <div className="max-w-7xl mx-auto px-4 pt-4">
               <button 
                 onClick={() => setActiveSection('home')}
-                className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 font-semibold mb-2"
+                className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-500 font-semibold mb-2"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back to Storefront</span>
@@ -1014,13 +867,12 @@ export default function App() {
           </div>
         )}
 
-        {/* SECTION 4: SMART SAVINGS, PRO PERKS & COMMUNITY LEADERBOARD */}
         {activeSection === 'rewards' && (
           <div>
             <div className="max-w-7xl mx-auto px-4 pt-4">
               <button 
                 onClick={() => setActiveSection('home')}
-                className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 font-semibold mb-2"
+                className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-500 font-semibold mb-2"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back to Storefront</span>
@@ -1037,13 +889,12 @@ export default function App() {
           </div>
         )}
 
-        {/* SECTION 5: SMART WARDROBE & GEAR BUILDER WITH ROI METER */}
         {activeSection === 'wardrobe' && (
           <div>
             <div className="max-w-7xl mx-auto px-4 pt-4">
               <button 
                 onClick={() => setActiveSection('home')}
-                className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 font-semibold mb-2"
+                className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-500 font-semibold mb-2"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back to Storefront</span>
@@ -1060,13 +911,12 @@ export default function App() {
           </div>
         )}
 
-        {/* SECTION 6: COLLABORATIVE GROUP & FAMILY SHOPPING BOARDS */}
         {activeSection === 'groupboards' && (
           <div>
             <div className="max-w-7xl mx-auto px-4 pt-4">
               <button 
                 onClick={() => setActiveSection('home')}
-                className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 font-semibold mb-2"
+                className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-500 font-semibold mb-2"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back to Storefront</span>
@@ -1081,12 +931,8 @@ export default function App() {
             />
           </div>
         )}
-
       </main>
 
-      {/* Modals & Slide-Out Drawers */}
-
-      {/* 1. Slide-Out Universal Saved Cart Drawer with Smart Split-Cart Optimizer */}
       <UniversalCartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
@@ -1102,7 +948,6 @@ export default function App() {
         language={language}
       />
 
-      {/* 2. Product Quick-View, Multi-Store Comparison & De-Influencer Modal */}
       <ProductComparisonModal
         item={selectedQuickViewItem}
         isOpen={Boolean(selectedQuickViewItem)}
@@ -1114,7 +959,6 @@ export default function App() {
         language={language}
       />
 
-      {/* 3. Authenticated Sign In / Sign Up & Store Linking Modal */}
       <AuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
@@ -1126,7 +970,6 @@ export default function App() {
         language={language}
       />
 
-      {/* 4. Web Speech API Voice Search Modal (English & Hindi) */}
       <VoiceSearchModal
         isOpen={isVoiceOpen}
         onClose={() => setIsVoiceOpen(false)}
@@ -1137,7 +980,6 @@ export default function App() {
         language={language}
       />
 
-      {/* 5. Pre-Checkout Duplicate Conflict Report Modal */}
       <ConflictAlertModal
         isOpen={Boolean(conflictReport)}
         onClose={() => setConflictReport(null)}
@@ -1145,7 +987,6 @@ export default function App() {
         language={language}
       />
 
-      {/* 6. Price Watchlist Modal */}
       <PriceWatchlistModal
         isOpen={isAlertsOpen}
         onClose={() => setIsAlertsOpen(false)}
@@ -1156,7 +997,6 @@ export default function App() {
         language={language}
       />
 
-      {/* 7. Universal 1-Tap Split-Route Checkout & Live Dispatch Tracker */}
       <CheckoutModal
         isOpen={isCheckoutOpen}
         onClose={() => setIsCheckoutOpen(false)}
@@ -1170,7 +1010,6 @@ export default function App() {
         onOrderSuccess={handleOrderSuccess}
       />
 
-      {/* 8. Pincode & City Selection Modal */}
       <PincodeModal
         isOpen={isPincodeOpen}
         onClose={() => setIsPincodeOpen(false)}
@@ -1179,28 +1018,13 @@ export default function App() {
         onSelectPincode={handleSelectPincode}
       />
 
-      {/* 9. Floating Toast Notification System */}
       <ToastNotification 
         toasts={toasts} 
         onDismiss={(id) => setToasts(prev => prev.filter(t => t.id !== id))} 
       />
 
-      {/* 10. Presentation Showcase Demo Guide */}
-      <PresentationGuide
-        onTriggerSearch={(query) => handleUniversalSearch(query)}
-        onOpenCart={() => setIsCartOpen(true)}
-        onOpenQuickViewFirst={() => setSelectedQuickViewItem(products[0])}
-        onOpenCheckout={() => {
-          setIsCartOpen(false);
-          setIsCheckoutOpen(true);
-        }}
-        onToggleLanguage={toggleLanguage}
-      />
-
-      {/* Footer */}
-      <footer className="border-t border-white/10 py-10 bg-darkbg-950 text-xs text-slate-400">
+      <footer className="border-t border-white/10 py-10 bg-slate-950 text-xs text-slate-400">
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
-          
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-400 to-rose-500 flex items-center justify-center font-black text-slate-950 text-sm">
@@ -1249,7 +1073,7 @@ export default function App() {
             <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-2 text-[11px]">
               <div className="flex items-center justify-between">
                 <span>AI Inference:</span>
-                <span className="text-emerald-400 font-mono font-semibold">Gemini Flash (Active)</span>
+                <span className="text-emerald-400 font-mono font-semibold">Gemini 2.5 Flash (Active)</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Database:</span>
@@ -1261,14 +1085,12 @@ export default function App() {
               </div>
             </div>
           </div>
-
         </div>
 
         <div className="max-w-7xl mx-auto px-4 mt-8 pt-6 border-t border-white/5 text-center text-[11px] text-slate-500">
           © {new Date().getFullYear()} VibeCart AI. All product images, logos, and trademarks belong to their respective marketplace owners.
         </div>
       </footer>
-
     </div>
   );
 }

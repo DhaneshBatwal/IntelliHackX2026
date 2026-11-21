@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +13,7 @@ from config import (
     PORT,
     HOST
 )
-from gemini_service import generate_vibe_capsule, audit_regret_shield
+from gemini_service import generate_vibe_capsule, audit_regret_shield, generate_shopping_ai_insights
 from shopping_service import enrich_capsule_collection, enrich_item_with_shopping_data
 from wardrobe_service import check_wardrobe_conflicts
 import supabase_service
@@ -37,6 +37,10 @@ app.add_middleware(
 )
 
 # --- Pydantic Request Models ---
+
+class CopilotRequest(BaseModel):
+    query: str
+    product_titles: Optional[List[str]] = []
 
 class CapsuleRequest(BaseModel):
     prompt: str = Field(..., description="Natural language scenario or aesthetic prompt")
@@ -109,6 +113,13 @@ async def health_check():
             "url": SUPABASE_URL if SUPABASE_URL else "local_mock_mode"
         }
     }
+
+@app.post("/api/ai-copilot")
+async def get_ai_copilot_insights(payload: CopilotRequest):
+    return await generate_shopping_ai_insights(
+        query=payload.query,
+        product_titles=payload.product_titles or []
+    )
 
 @app.post("/api/capsule")
 async def create_vibe_capsule(payload: CapsuleRequest):
@@ -249,3 +260,4 @@ async def simulate_auto_buy(payload: SimulateAutoBuyRequest):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host=HOST, port=PORT, reload=True)
+
